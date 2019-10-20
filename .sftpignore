@@ -1,0 +1,17 @@
+# Example .gitignore file for your config dir.
+# A * ensures that everything will be ignored.
+#*
+
+keys
+.*
+.*/*
+secrets
+build.sh
+deploy.sh
+run.sh
+Dockerfile
+README.md
+
+# exception to the rule
+!app/*.*
+

@@ -1,0 +1,12 @@
+# Example .gitignore file for your config dir.
+# A * ensures that everything will be ignored.
+#*
+
+# exclude everything
+secrets/*
+keys/*
+
+# exception to the rule
+!keys/.gitkeep
+!keys/*.sh
+!keys/*.md
