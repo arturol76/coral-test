@@ -1,0 +1,15 @@
+requests
+tinydb
+passlib
+bcrypt
+numpy
+opencv_python
+requests
+progressbar
+pillow
+tensorflow
+keras
+cvlib
+flask
+flask_restful
+flask_jwt_extended

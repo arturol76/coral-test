@@ -1,0 +1,16 @@
+.DS_Store
+db/db.json
+test/detect.sh
+build/
+dist/
+images/*.jpg
+*.egg-info/
+*.egg
+*.py[cod]
+**/__pycache__/
+*.so
+*~
+
+# due to using tox and pytest
+.tox
+.cache
