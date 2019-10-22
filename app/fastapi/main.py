@@ -12,14 +12,21 @@ import modules.log as log
 
 import datetime
 
+from enum import Enum
+
 upload_folder = "."
 
 app = FastAPI()
 
+class ModelName(str, Enum):
+    yolo = "object"
+    coral = "coral"
+    face = "face"
+
 class DetectRequest(BaseModel):
     url: str = None
     file: str = None
-    model: str
+    model: ModelName
     delete: bool = None
     optional: str = None
 
@@ -40,11 +47,11 @@ async def detect(item: DetectRequest):
     args['file'] = item.file
     args['delete'] = item.delete
 
-    if item.model == 'face':
+    if item.model == ModelName.face:
         m = FaceDetect.Face()
-    elif item.model == 'coral':
+    elif item.model == ModelName.coral:
         m = coral_m
-    elif item.model == 'object':
+    elif item.model == ModelName.yolo:
         m = object_m
     else:
         #abort(400, msg='Invalid Model:{}'.format(args['type']))
