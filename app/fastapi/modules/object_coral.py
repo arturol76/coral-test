@@ -71,4 +71,8 @@ class ObjectCoral:
         else:
             log.logger.debug('No object detected!')
 
+        if args['delete']:
+            log.logger.debug("Deleting file {}".format(fi))
+            os.remove(fi)
+
         return detections

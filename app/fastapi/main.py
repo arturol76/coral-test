@@ -19,7 +19,8 @@ app = FastAPI()
 class DetectRequest(BaseModel):
     url: str = None
     file: str = None
-    model: str 
+    model: str
+    delete: bool = None
     optional: str = None
 
 coral_m = ObjectDetectCoral.ObjectCoral()
@@ -37,6 +38,7 @@ async def detect(item: DetectRequest):
     args = dict()
     args['url'] = item.url
     args['file'] = item.file
+    args['delete'] = item.delete
 
     if item.model == 'face':
         m = FaceDetect.Face()

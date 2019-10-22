@@ -27,15 +27,18 @@ class Object:
         detections = []
 
         for l, c, b in zip(label, conf, bbox):
+            log.logger.debug ('-----------------------------------------')
             c = "{:.2f}%".format(c * 100)
             obj = {
                 'type': l,
                 'confidence': c,
                 'box': b
             }
+            log.logger.debug("{}".format(obj))
             detections.append(obj)
 
         if args['delete']:
+            log.logger.debug("Deleting file {}".format(fi))
             os.remove(fi)
 
         return detections
