@@ -33,8 +33,10 @@ RUN apt-get update \
 	&& apt-get  -y install  libsm6 libxext6 libxrender-dev \
 	&& apt-get -y upgrade
 	
-#deploy python app
-COPY ./app /app
+#deploy mlapi
+#refer to https://github.com/phusion/baseimage-docker#docker_single_process
+RUN mkdir -p /app/mlapi
+COPY ./app/mlapi /app/mlapi
 WORKDIR /app/mlapi
 RUN pip3 install numpy \
 	&& pip3 install --upgrade numpy \
@@ -42,9 +44,20 @@ RUN pip3 install numpy \
 	&& pip3 install --upgrade setuptools \
 	&& pip install -r requirements.txt \
 	&& python3 adduser_cmdline.py -u arturol76 -p arturol76
-EXPOSE 5000
+RUN mkdir /etc/service/mlapi
+COPY ./app/mlapi.run /etc/service/mlapi/run
+RUN chmod +x /etc/service/mlapi/run
+#EXPOSE 5000
 
+#deploy python app
 #refer to https://github.com/phusion/baseimage-docker#docker_single_process
-RUN mkdir /etc/service/app
-COPY ./app/myapp.run /etc/service/app/run
-RUN chmod +x /etc/service/app/run
+RUN mkdir -p /app/fastapi
+COPY ./app/fastapi /app/fastapi
+WORKDIR /app/fastapi
+RUN pip install -r requirements.txt
+RUN mkdir /etc/service/fastapi
+COPY ./app/fastapi.run /etc/service/fastapi/run
+RUN chmod +x /etc/service/fastapi/run
+#EXPOSE 5001
+
+EXPOSE 5000 5001

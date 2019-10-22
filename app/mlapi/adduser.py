@@ -3,34 +3,25 @@ from passlib.hash import sha256_crypt
 import modules.globals as g
 import getpass
 
-import argparse
-
 import modules.db as Database
 
 db = Database.Database()
 
-ap = argparse.ArgumentParser()
-    
-ap.add_argument(
-    '-u', 
-    '--user',
-    default=None,
-    required=True,
-    dest='user',
-    help='username'
-)
+print ('--------------- User Creation ------------')
+while True:
+    name = input ('\nuser name (Ctrl+C to exit):')
+    if not name:
+        print ('Error: username needed')
+        continue
+    p1 = getpass.getpass('Please enter password:')
+    if not p1:
+        print ('Error: password cannot be empty')
+        continue
+    p2 = getpass.getpass('Please re-enter password:')
+    if  p1 != p2:
+        print ('Passwords do not match, please re-try')
+        continue
 
-ap.add_argument(
-    '-p', 
-    '--password',
-    default=None,
-    required=True,
-    dest='password',
-    help='password'
-)
+    db.add_user(name,p1)
+    print ('User: {} created'.format(name))
 
-args = vars(ap.parse_args())
-
-if args['user'] != None and args['password'] != None:
-    db.add_user(args['user'],args['password'])
-    print ('User: {} created'.format(args['user']))

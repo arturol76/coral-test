@@ -15,3 +15,5 @@ README.md
 # exception to the rule
 !app/*.*
 
+# ignore run files
+app/*.run

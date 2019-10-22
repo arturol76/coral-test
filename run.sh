@@ -58,6 +58,7 @@ docker -H $docker_host create \
     --restart always \
     -p ${docker_port}:22/tcp \
     -p 8000:5000/tcp \
+    -p 8001:5001/tcp \
     -e TZ="Europe/Rome" \
     -v ${volume_ssh}:"/root/.ssh":rw \
     -v /dev:/dev \

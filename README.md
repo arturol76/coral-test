@@ -11,5 +11,14 @@ WORK IN PROGRESS!! DO NOT USE.
 ## Build
 
 ## Run
+mlapi:
+```
+cd /app/mlapi && python3 ./api.py
+```
+
+fastapi:
+```
+cd /app/fastapi && uvicorn --reload --host 0.0.0.0 --port 5001 main:app
+```
 
 ## Change Log
