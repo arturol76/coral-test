@@ -3,11 +3,13 @@ import requests as py_requests
 import uuid
 from mimetypes import guess_extension
 
+import modules.log as log
+
 ALLOWED_EXTENSIONS = set(['.png', '.jpg', '.jpeg'])
 
 def file_ext(filename):
     f,e = os.path.splitext(filename)
-    print('input={} --> f={} e={}'.format(filename,f,e))
+    log.logger.debug('input={} --> f={} e={}'.format(filename,f,e))
     return e.lower()
 
 # Checks if filename is allowed
@@ -33,7 +35,7 @@ def get_file(args, upload_folder):
     # passed as a payload url
     elif args['url']:
         url = args['url']
-        print('Got url:{}'.format(url))
+        log.logger.debug('Got url:{}'.format(url))
         ext = file_ext(url)
         r = py_requests.get(url, allow_redirects=True)
         
@@ -42,22 +44,22 @@ def get_file(args, upload_folder):
         if cd:
             cd = cd.replace('"','')
             ext = file_ext(cd)
-            print('CD: extension {} derived from {}'.format(ext,cd))
+            log.logger.debug('CD: extension {} derived from {}'.format(ext,cd))
         elif ct:
             ext = guess_extension(ct.partition(';')[0].strip())
             if ext == '.jpe': 
                 ext = '.jpg'
-            print('CT: extension {} derived from {}'.format(ext,ct))
+            log.logger.debug('CT: extension {} derived from {}'.format(ext,ct))
             if not allowed_ext(ext):
                 #abort(400, msg='filetype {} not allowed'.format(ext))   
                 return     
         else:
             ext = '.jpg'
-        print('saving: {}{}'.format(file_with_path_no_ext,ext))
+        log.logger.debug('saving: {}{}'.format(file_with_path_no_ext,ext))
         open(file_with_path_no_ext+ext, 'wb').write(r.content)
     else:
         #abort(400, msg='could not determine file type')
         return
 
-    print('get_file returned: {}{}'.format(file_with_path_no_ext,ext))
+    log.logger.debug('get_file returned: {}{}'.format(file_with_path_no_ext,ext))
     return file_with_path_no_ext, ext

@@ -7,14 +7,17 @@ import os
 
 import modules.log as log
 
-class Object:
+class Detector:
     def __init__(self):
-        log.logger.debug('Initialized Object Detection')
+        self.name = "object"
+        log.logger.debug('Initialized detector: {}'.format(self.name))
+
+    def get_name(self):
+        return self.name
 
     # runs yolov3 object detection
-    def detect(self, f,ext, args):
-        fi = f+ext
-        fo = f+'-object'+ext
+    def detect(self, fi, fo, args):
+        
         log.logger.debug("Reading {}".format(fi))
         image = cv2.imread(fi)
         bbox, label, conf = cv.detect_common_objects(image)
@@ -40,5 +43,11 @@ class Object:
         if args['delete']:
             log.logger.debug("Deleting file {}".format(fi))
             os.remove(fi)
+
+        details = {
+            'input': l,
+            'output': c,
+            'box': b
+        }
 
         return detections

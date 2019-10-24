@@ -60,6 +60,7 @@ docker -H $docker_host create \
     -p 8000:5000/tcp \
     -p 8001:5001/tcp \
     -e TZ="Europe/Rome" \
+    --env-file ./secrets/envfile \
     -v ${volume_ssh}:"/root/.ssh":rw \
     -v /dev:/dev \
     --privileged \

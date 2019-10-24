@@ -1,11 +1,14 @@
 ## Sample APP
+A dockerized application to play with Google CORAL EdgeTPU.
+This repo has been generated using [arturol76/phusion-app-template](https://github.com/arturol76/phusion-app-template) as a template.
+
+WORK IN PROGRESS!! DO NOT USE.
 
 ### APP
-Sample APP using [FastAPI](https://github.com/tiangolo/fastapi) and uvicorn to expose a simple API.
+Simple API for object detection using [FastAPI](https://github.com/tiangolo/fastapi) and uvicorn.
 Test it connecting a browser to the following url:
 
-http://192.168.2.96:8000/
-
+http://192.168.2.96:8001/
 
 (assuming that the docker's ip is 192.168.2.96)
 
@@ -17,5 +20,6 @@ As an example, this is what "myapp.run" does in order to start this sample appli
 
 ```
 #!/bin/sh
-cd /app && uvicorn --reload --host 0.0.0.0 main:app
+cd /app/fastapi && uvicorn --reload --host 0.0.0.0 --port YOUR_DESIRED_PORT main:app
 ```
+

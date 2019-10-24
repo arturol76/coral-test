@@ -7,6 +7,6 @@ secrets/*
 keys/*
 
 # exception to the rule
-!keys/.gitkeep
+!*/.gitkeep
 !keys/*.sh
 !keys/*.md

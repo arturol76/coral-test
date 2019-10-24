@@ -21,12 +21,23 @@ RUN wget https://dl.google.com/coral/python/tflite_runtime-1.14.0-cp36-cp36m-lin
 	&& cd tflite/python/examples/detection \
 	&& ./install_requirements.sh
 
-#download yolo weights
+#download yolo weights (to be used with cvlib)
 RUN mkdir -p /root/.cvlib/object_detection/yolo/yolov3 \
 	&& cd /root/.cvlib/object_detection/yolo/yolov3 \
 	&& wget https://github.com/arunponnusamy/object-detection-opencv/raw/master/yolov3.cfg \
 	&& wget https://pjreddie.com/media/files/yolov3.weights \
 	&& wget https://github.com/arunponnusamy/object-detection-opencv/raw/master/yolov3.txt
+
+#download yolo weights (to be used with yolo.py)
+RUN mkdir -p /app/fastapi/models \
+	&& cd /app/fastapi/models \
+	&& wget https://github.com/arunponnusamy/object-detection-opencv/raw/master/yolov3.txt \
+	&& wget https://pjreddie.com/media/files/yolov3-tiny.weights \
+	&& wget https://github.com/pjreddie/darknet/raw/master/cfg/yolov3-tiny.cfg \
+	&& wget https://pjreddie.com/media/files/yolov3.weights \
+	&& wget https://github.com/pjreddie/darknet/raw/master/cfg/yolov3.cfg \
+	&& wget https://pjreddie.com/media/files/yolov3-spp.weights \
+	&& wget https://github.com/pjreddie/darknet/raw/master/cfg/yolov3-spp.cfg
 
 #IMPORTANT: without this, you may have errors whith "import cv2"
 RUN apt-get update \

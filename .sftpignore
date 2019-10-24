@@ -2,18 +2,14 @@
 # A * ensures that everything will be ignored.
 #*
 
+secrets
 keys
 .*
-.*/*
-secrets
-build.sh
-deploy.sh
-run.sh
+*.*
 Dockerfile
-README.md
 
 # exception to the rule
-!app/*.*
+!app/**
 
 # ignore run files
 app/*.run
