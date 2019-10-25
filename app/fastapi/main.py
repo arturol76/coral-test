@@ -21,12 +21,11 @@ import modules.log as log
 import datetime
 from enum import Enum
 
-class DetectRequest(BaseModel):
+class API_DetectRequest(BaseModel):
     url: str = None
     file: str = None
-    model: str
+    models_list: List[str] 
     delete: bool = None
-    model_list: List[str] = None
 
 upload_folder = "./images"
 if not os.path.exists(upload_folder):
@@ -42,9 +41,8 @@ app = FastAPI()
 app.mount("/images", StaticFiles(directory=upload_folder), name="static")
 
 
-api_detectors = Detectors.Detectors()
-
 #initialization of some models to save time (is it true?)
+api_detectors = Detectors.Detectors()
 api_detectors.add(ObjectDetect.Detector())
 api_detectors.add(FaceDetect.Detector())
 api_detectors.add(ObjectDetectCoral.Detector())
@@ -69,9 +67,11 @@ async def get_detectors():
 
 #http://192.168.2.96:8001/api/v1/detect
 @app.post("/api/v1/detect")
-async def detect(request: DetectRequest):
-    start = datetime.datetime.now()
-    
+async def detect(request: API_DetectRequest):
+    executed_succesfully = []
+    failed = []
+
+    start_total = datetime.datetime.now()
     args = dict()
     args['url'] = request.url
     args['file'] = request.file
@@ -82,30 +82,54 @@ async def detect(request: DetectRequest):
     fi = fip + ext
     fo = fip + '-object' + ext
 
-    try:
-        detections = api_detectors.detect(request.model, fi, fo, args)
-    #except Exception as error:
-    except:
-        raise HTTPException(status_code=404, detail='Invalid Model: {}'.format(request.model))
+    response_list = []
+    
+    for model_item in request.models_list: 
+        try:
+            start = datetime.datetime.now()
+            detections = api_detectors.detect(model_item, fi, fo, args)
+            stop = datetime.datetime.now()
+            elapsed_time = stop - start
+            log.logging.info('detection took {}'.format(elapsed_time))
 
-    stop = datetime.datetime.now()
-    elapsed_time = stop - start
-    log.logging.info('detection took {}'.format(elapsed_time))
+            details = {
+                "fi": fi,
+                "fo": fo,
+                "detection_time": elapsed_time
+            }
 
-    details = {
-        "fi": fi,
-        "fo": fo,
-        "detection_time": elapsed_time
-    }
+            response_item = {
+                "model": model_item,
+                "details": details,
+                "error": None,
+                "model_response": detections
+            }
+            response_list.append(response_item)
+
+            executed_succesfully.append(model_item)
+   
+        #except Exception as error:
+        except:
+            response_item = {
+                "model": model_item,
+                "details": None,
+                "error": "invalid model: {}".format(model_item),
+                "model_response": None
+            }
+            response_list.append(response_item)
+            failed.append(model_item)
+            #raise HTTPException(status_code=404, detail='Invalid Model: {}'.format(model_item))
+
+    stop_total = datetime.datetime.now()
+    elapsed_time_total = stop_total - start_total
+    log.logging.info('TOTAL detection took {}'.format(elapsed_time_total))
 
     response = {
         "request":      request,
-        "detection":    detections,
-        "details":      details    
+        "executed_ok":  executed_succesfully,
+        "failed":       failed,       
+        "total_time":   elapsed_time_total,
+        "reponse_list": response_list
     }
     
     return response
-
-@app.post("/detect2/{model}")
-async def detect2(model: str, item: DetectRequest, type: str):
-    return item
