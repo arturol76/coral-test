@@ -15,11 +15,20 @@ class Detector:
     def __init__(self):
         self.name = "face_coral"
         log.logger.debug('Initialized detector: {}'.format(self.name))
-        
+
+    def init(self):
         # Initialize engine
         self.model_file="/usr/share/edgetpu/examples/models/mobilenet_ssd_v2_face_quant_postprocess_edgetpu.tflite"
         self.label_file=None
-        self.engine = DetectionEngine(self.model_file)
+        
+        try:
+            self.engine = DetectionEngine(self.model_file)
+            self.labels = self.ReadLabelFile(self.label_file) if self.label_file else None
+
+        except Exception as error:
+            log.logger.error('Initializion error: {}'.format(error))
+            
+        return
 
     def get_name(self):
         return self.name

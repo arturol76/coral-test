@@ -10,9 +10,13 @@ class Detector:
     def __init__(self):
         self.name = "face"
         log.logger.debug('Initialized detector: {}'.format(self.name))
+
+    def init(self):
+        return
         
     def get_name(self):
         return self.name
+
     def detect(self, fi, fo, args):
         log.logger.debug("Reading {}".format(fi))
         image = cv2.imread(fi)

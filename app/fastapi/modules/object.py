@@ -12,6 +12,9 @@ class Detector:
         self.name = "object"
         log.logger.debug('Initialized detector: {}'.format(self.name))
 
+    def init(self):
+        return
+
     def get_name(self):
         return self.name
 

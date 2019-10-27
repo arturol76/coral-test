@@ -1,135 +1,56 @@
-from fastapi import FastAPI, HTTPException
-from starlette.staticfiles import StaticFiles
+import argparse
+import uvicorn
 import os
-
-from pydantic import BaseModel
-from typing import List, Set, Tuple, Dict
-
-import modules.face as FaceDetect
-import modules.object as ObjectDetect
-import modules.object_coral as ObjectDetectCoral
-import modules.face_coral as FaceDetectCoral
-import modules.rekognition as RekognitionDetect
-import modules.yolo as YoloDetect
-import modules.detectors as Detectors
-
-import modules.globals as g
-import modules.db as Database
-import modules.utils as utils
 import modules.log as log
 
-import datetime
-from enum import Enum
-
-class API_DetectRequest(BaseModel):
-    url: str = None
-    file: str = None
-    models_list: List[str] 
-    delete: bool = None
-
-upload_folder = "./images"
-if not os.path.exists(upload_folder):
-    os.makedirs(upload_folder)
-    log.logging.info('creating folder {}'.format(upload_folder))
-else:
-    log.logging.info('folder {} already exists'.format(upload_folder))
-
-#fast api
-app = FastAPI()
-
-#serving static files
-app.mount("/images", StaticFiles(directory=upload_folder), name="static")
-
-
-#initialization of some models to save time (is it true?)
-api_detectors = Detectors.Detectors()
-api_detectors.add(ObjectDetect.Detector())
-api_detectors.add(FaceDetect.Detector())
-api_detectors.add(ObjectDetectCoral.Detector())
-api_detectors.add(FaceDetectCoral.Detector())
-api_detectors.add(RekognitionDetect.Detector())
-api_detectors.add(YoloDetect.Detector(YoloDetect.YoloModel.yolov3))
-api_detectors.add(YoloDetect.Detector(YoloDetect.YoloModel.yolov3_spp))
-api_detectors.add(YoloDetect.Detector(YoloDetect.YoloModel.yolov3_tiny))
-
-@app.get("/")
-async def root():
-    return {"message": "Hello World"}
-
-
-@app.get("/api/v1/detectors")
-async def get_detectors():
-    response = {
-        "detectors": list(api_detectors.get())
-    } 
-
-    return response
-
-#http://192.168.2.96:8001/api/v1/detect
-@app.post("/api/v1/detect")
-async def detect(request: API_DetectRequest):
-    executed_succesfully = []
-    failed = []
-
-    start_total = datetime.datetime.now()
-    args = dict()
-    args['url'] = request.url
-    args['file'] = request.file
-    args['delete'] = request.delete
-    args['gender'] ="male"
-
-    fip,ext = utils.get_file(args, upload_folder)
-    fi = fip + ext
-    fo = fip + '-object' + ext
-
-    response_list = []
+def parse_cmdline_args():
+    parser = argparse.ArgumentParser()
     
-    for model_item in request.models_list: 
-        try:
-            start = datetime.datetime.now()
-            detections = api_detectors.detect(model_item, fi, fo, args)
-            stop = datetime.datetime.now()
-            elapsed_time = stop - start
-            log.logging.info('detection took {}'.format(elapsed_time))
+    parser.add_argument(
+        '-c', 
+        '--config',
+        default='./config/config.json',
+        dest='config_json',
+        help='Configuration file'
+    )
 
-            details = {
-                "fi": fi,
-                "fo": fo,
-                "detection_time": elapsed_time
-            }
+    parser.add_argument(
+        '-u',
+        '--uvicorn',
+        action='store_true', 
+        default=False,
+        dest='uvicorn_start',
+        help='Starts uvicorn programmatically')
 
-            response_item = {
-                "model": model_item,
-                "details": details,
-                "error": None,
-                "model_response": detections
-            }
-            response_list.append(response_item)
+    return parser.parse_args()
 
-            executed_succesfully.append(model_item)
-   
-        #except Exception as error:
-        except:
-            response_item = {
-                "model": model_item,
-                "details": None,
-                "error": "invalid model: {}".format(model_item),
-                "model_response": None
-            }
-            response_list.append(response_item)
-            failed.append(model_item)
-            #raise HTTPException(status_code=404, detail='Invalid Model: {}'.format(model_item))
-
-    stop_total = datetime.datetime.now()
-    elapsed_time_total = stop_total - start_total
-    log.logging.info('TOTAL detection took {}'.format(elapsed_time_total))
-
-    response = {
-        "request":      request,
-        "executed_ok":  executed_succesfully,
-        "failed":       failed,       
-        "total_time":   elapsed_time_total,
-        "reponse_list": response_list
-    }
+def start_uvicorn():
+    ssl_keyfile_env = None
+    ssl_certfile_env = None
     
-    return response
+    if 'SSL_KEYFILE' in os.environ and 'SSL_CERTFILE' in os.environ:
+        if os.path.exists(os.environ['SSL_KEYFILE']) and os.path.exists(os.environ['SSL_CERTFILE']):
+            ssl_keyfile_env = os.environ['SSL_KEYFILE']
+            ssl_certfile_env = os.environ['SSL_CERTFILE']
+        else:
+            log.logger.error("KEY/CERT files not not found. Check files existance and/or ENV vars")
+    else:
+        log.logger.debug("KEY/CERT ENV vars not not found.")
+    
+    uvicorn.run(
+        "api:app", 
+        host="0.0.0.0",
+        port=5001, 
+        log_level="info",
+        ssl_keyfile=ssl_keyfile_env,
+        ssl_certfile=ssl_certfile_env,
+        reload=True
+    )
+
+if __name__ == "__main__":
+    #parse command line arguments
+    parser = parse_cmdline_args()
+
+    #starting uvicorn
+    if parser.uvicorn_start == True:
+        start_uvicorn()

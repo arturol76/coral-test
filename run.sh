@@ -62,6 +62,7 @@ docker -H $docker_host create \
     -e TZ="Europe/Rome" \
     --env-file ./secrets/envfile \
     -v ${volume_ssh}:"/root/.ssh":rw \
+    -v letsencrypt-dns_etc:"/letsencrypt":ro \
     -v /dev:/dev \
     --privileged \
     --name $container_name \

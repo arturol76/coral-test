@@ -14,7 +14,9 @@ from PIL import Image
 class Detector:
     def __init__(self):
         self.name = "rekognition"
-        
+        log.logger.debug('Initialized detector: {}'.format(self.name))
+
+    def init(self):
         self.aws_region = os.environ['AWS_REGION']
         self.aws_access_key_id = os.environ['AWS_ACCESS_KEY_ID']
         self.aws_access_key_secret = os.environ['AWS_ACCESS_KEY_SECRET']
@@ -30,8 +32,7 @@ class Detector:
             "Person": "person",
             "Car": "car"
         }
-        
-        log.logger.debug('Initialized detector: {}'.format(self.name))
+        return
 
     def get_name(self):
         return self.name

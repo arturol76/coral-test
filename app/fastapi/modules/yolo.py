@@ -37,6 +37,7 @@ class Detector:
         self.name = model
         self.model = model
 
+    def init(self):
         start = datetime.datetime.now()
 
         if self.model == YoloModel.yolov3_tiny:
@@ -62,6 +63,8 @@ class Detector:
         stop = datetime.datetime.now()
         elapsed_time = stop - start
         print("initialization took:", elapsed_time)
+        
+        return
 
     def get_name(self):
         return self.name

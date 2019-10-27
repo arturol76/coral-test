@@ -17,11 +17,19 @@ class Detector:
         self.name = "object_coral"
         log.logger.debug('Initialized detector: {}'.format(self.name))
         
+    def init(self):
         # Initialize engine
         self.model_file="/usr/share/edgetpu/examples/models/mobilenet_ssd_v2_coco_quant_postprocess_edgetpu.tflite"
         self.label_file="/usr/share/edgetpu/examples/models/coco_labels.txt"
-        self.engine = DetectionEngine(self.model_file)
-        self.labels = self.ReadLabelFile(self.label_file) if self.label_file else None
+
+        try:
+            self.engine = DetectionEngine(self.model_file)
+            self.labels = self.ReadLabelFile(self.label_file) if self.label_file else None
+
+        except Exception as error:
+            log.logger.error('Initializion error: {}'.format(error))
+            
+        return
         
     def get_name(self):
         return self.name
