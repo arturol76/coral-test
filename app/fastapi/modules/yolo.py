@@ -7,9 +7,10 @@ import datetime
 
 from enum import Enum
 
-import modules.log as log
-
 from cvlib.object_detection import draw_bbox
+
+import logging
+logger = logging.getLogger(__name__)
 
 class YoloModel(str, Enum):
     yolov3      = "yolov3"
@@ -57,8 +58,8 @@ class Detector:
         self.classes = [line.strip() for line in f.readlines()]
         self.net = cv2.dnn.readNet(weights_file_abs_path, config_file_abs_path)
         
-        log.logger.debug('Initialized detector: {}'.format(self.name))
-        log.logger.debug('config:{}, weights:{}'.format(config_file_abs_path, weights_file_abs_path))
+        logger.debug('Initialized detector: {}'.format(self.name))
+        logger.debug('config:{}, weights:{}'.format(config_file_abs_path, weights_file_abs_path))
 
         stop = datetime.datetime.now()
         elapsed_time = stop - start
@@ -78,7 +79,7 @@ class Detector:
         return output_layers
 
     def detect(self, fi, fo, args):
-        log.logger.debug("Reading {}".format(fi))
+        logger.debug("Reading {}".format(fi))
         image = cv2.imread(fi)
 
         Height, Width = image.shape[:2]
@@ -129,24 +130,24 @@ class Detector:
 
         if not args['delete']:
             out = draw_bbox(image, bbox, label, conf)
-            log.logger.debug("Writing {}".format(fo))
+            logger.debug("Writing {}".format(fo))
             cv2.imwrite(fo, out)
 
         detections = []
 
         for l, c, b in zip(label, conf, bbox):
-            log.logger.debug ('-----------------------------------------')
+            logger.debug ('-----------------------------------------')
             c = "{:.2f}%".format(c * 100)
             obj = {
                 'type': l,
                 'confidence': c,
                 'box': b
             }
-            log.logger.debug("{}".format(obj))
+            logger.debug("{}".format(obj))
             detections.append(obj)
 
         if args['delete']:
-            log.logger.debug("Deleting file {}".format(fi))
+            logger.debug("Deleting file {}".format(fi))
             os.remove(fi)
 
         return detections                                   

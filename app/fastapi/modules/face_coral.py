@@ -9,12 +9,13 @@ from edgetpu.detection.engine import DetectionEngine
 from PIL import Image
 from PIL import ImageDraw
 
-import modules.log as log
+import logging
+logger = logging.getLogger(__name__)
 
 class Detector:
     def __init__(self):
         self.name = "face_coral"
-        log.logger.debug('Initialized detector: {}'.format(self.name))
+        logger.debug('Initialized detector: {}'.format(self.name))
 
     def init(self):
         # Initialize engine
@@ -26,7 +27,7 @@ class Detector:
             self.labels = self.ReadLabelFile(self.label_file) if self.label_file else None
 
         except Exception as error:
-            log.logger.error('Initializion error: {}'.format(error))
+            logger.error('Initializion error: {}'.format(error))
             
         return
 
@@ -38,7 +39,7 @@ class Detector:
         
         # Open image.
         img = Image.open(fi)
-        log.logger.debug("Reading {}".format(fi))
+        logger.debug("Reading {}".format(fi))
 
         # Run inference.
         ans = self.engine.detect_with_image(img, threshold=0.05, keep_aspect_ratio=True,relative_coord=False, top_k=10)
@@ -48,7 +49,7 @@ class Detector:
         # Display result.
         if ans:
             for obj in ans:
-                log.logger.debug ('-----------------------------------------')
+                logger.debug ('-----------------------------------------')
                 
                 #sample output
                 #score =  0.97265625
@@ -59,15 +60,15 @@ class Detector:
                     'confidence': "{:.2f}%".format(obj.score * 100),
                     'box': box
                 }
-                log.logger.debug("{}".format(obj))
+                logger.debug("{}".format(obj))
                 detections.append(obj)
             
             img.save(fo)
         else:
-            log.logger.debug('No face detected!')
+            logger.debug('No face detected!')
 
         if args['delete']:
-            log.logger.debug("Deleting file {}".format(fi))
+            logger.debug("Deleting file {}".format(fi))
             os.remove(fi)
 
         return detections

@@ -4,12 +4,13 @@ import numpy as np
 import modules.globals as g
 import os
 
-import modules.log as log
+import logging
+logger = logging.getLogger(__name__)
 
 class Detector:
     def __init__(self):
         self.name = "face"
-        log.logger.debug('Initialized detector: {}'.format(self.name))
+        logger.debug('Initialized detector: {}'.format(self.name))
 
     def init(self):
         return
@@ -18,12 +19,12 @@ class Detector:
         return self.name
 
     def detect(self, fi, fo, args):
-        log.logger.debug("Reading {}".format(fi))
+        logger.debug("Reading {}".format(fi))
         image = cv2.imread(fi)
         faces, conf = cv.detect_face(image)
 
-        log.logger.debug("faces={}".format(faces))
-        log.logger.debug("conf={}".format(conf))
+        logger.debug("faces={}".format(faces))
+        logger.debug("conf={}".format(conf))
 
         detections = []
         for f, c in zip(faces, conf):
@@ -54,15 +55,15 @@ class Detector:
                 cv2.putText(image, gender_label, (startX, Y),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
 
-            log.logger.debug("{}".format(obj))
+            logger.debug("{}".format(obj))
             detections.append(obj)
 
         if not args['delete']:
-            log.logger.debug("Writing {}".format(fo))
+            logger.debug("Writing {}".format(fo))
             cv2.imwrite(fo, image)
 
         if args['delete']:
-            log.logger.debug("Deleting file {}".format(fi))
+            logger.debug("Deleting file {}".format(fi))
             os.remove(fi)
 
         return detections

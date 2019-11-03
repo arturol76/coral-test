@@ -8,14 +8,15 @@ from edgetpu.detection.engine import DetectionEngine
 from PIL import Image
 from PIL import ImageDraw
 
-import modules.log as log
+import logging
+logger = logging.getLogger(__name__)
 
 conf_min = 0.0
 
 class Detector:
     def __init__(self):
         self.name = "object_coral"
-        log.logger.debug('Initialized detector: {}'.format(self.name))
+        logger.debug('Initialized detector: {}'.format(self.name))
         
     def init(self):
         # Initialize engine
@@ -27,7 +28,7 @@ class Detector:
             self.labels = self.ReadLabelFile(self.label_file) if self.label_file else None
 
         except Exception as error:
-            log.logger.error('Initializion error: {}'.format(error))
+            logger.error('Initializion error: {}'.format(error))
             
         return
         
@@ -49,7 +50,7 @@ class Detector:
         
         # Open image.
         pil_image = Image.open(fi)
-        log.logger.debug("Reading {}".format(fi))
+        logger.debug("Reading {}".format(fi))
 
         # Run inference.
         ans = self.engine.detect_with_image(pil_image, threshold=0.05, keep_aspect_ratio=True,relative_coord=False, top_k=10)
@@ -62,7 +63,7 @@ class Detector:
         # Display result.
         if ans:
             for obj in ans:
-                log.logger.debug ('-----------------------------------------')
+                logger.debug ('-----------------------------------------')
                 if self.labels:
                     #sample output
                     #score =  0.97265625
@@ -79,7 +80,7 @@ class Detector:
                             'confidence': "{:.2f}%".format(c * 100),
                             'box': b
                         }
-                    log.logger.debug("{}".format(obj))
+                    logger.debug("{}".format(obj))
 
                     if c > conf_min:
                         detections.append(obj)
@@ -87,7 +88,7 @@ class Detector:
                         post_label.append(l)
                         post_conf.append(c)
                     else:
-                        log.logger.debug("DISCARDED as conf={} and threashold={}".format(c, conf_min))
+                        logger.debug("DISCARDED as conf={} and threashold={}".format(c, conf_min))
 
             # Perform non maximum suppression to eliminate redundant overlapping boxes with
             # lower confidences.
@@ -104,14 +105,14 @@ class Detector:
             for j in post_conf:
                 nms_conf.append(float(j))
 
-            log.logger.debug("NMS bbox {}".format(nms_box))
-            log.logger.debug("NMS conf {}".format(nms_conf))
+            logger.debug("NMS bbox {}".format(nms_box))
+            logger.debug("NMS conf {}".format(nms_conf))
 
             #la prima soglia rappresenta la confidenza minima che accetti per un bbox
             #ti pare di aver capito che la seconda soglia rappresenta
             #l'area in % di sovrapposizione tra due bbox
             indices = cv2.dnn.NMSBoxes(nms_box, nms_conf, 0.2, 0.3)
-            log.logger.debug("NMS indices {}".format(indices))
+            logger.debug("NMS indices {}".format(indices))
 
             nms_bbox = []
             nms_label = []
@@ -125,22 +126,22 @@ class Detector:
 
             cv_image = np.array(pil_image)
             out = draw_bbox(cv_image, nms_bbox, nms_label, nms_conf, write_conf=True)
-            #log.logger.debug("Writing {}".format(fo))
+            #logger.debug("Writing {}".format(fo))
             img2 = Image.fromarray(out, 'RGB')
             img2.save(fo)
 
             # if not args['delete']:
             #     cv_image = np.array(pil_image)
             #     out = draw_bbox(cv_image, post_bbox, post_label, post_conf, write_conf=True)
-            #     #log.logger.debug("Writing {}".format(fo))
+            #     #logger.debug("Writing {}".format(fo))
             #     img2 = Image.fromarray(out, 'RGB')
             #     img2.save(fo)
         
         else:
-            log.logger.debug('No object detected!')
+            logger.debug('No object detected!')
 
         if args['delete']:
-            log.logger.debug("Deleting file {}".format(fi))
+            logger.debug("Deleting file {}".format(fi))
             os.remove(fi)
 
         return detections

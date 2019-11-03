@@ -3,6 +3,9 @@ from passlib.hash import bcrypt
 import modules.globals as g
 import getpass
 
+import logging
+logger = logging.getLogger(__name__)
+
 class Database:
 
     def _get_hash(self,password):

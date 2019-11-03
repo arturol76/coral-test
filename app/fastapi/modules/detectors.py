@@ -1,7 +1,9 @@
 import datetime
 from enum import Enum
-import modules.log as log
 from typing import Dict
+
+import logging
+logger = logging.getLogger(__name__)
 
 class Detectors:
     def __init__(self):
@@ -15,7 +17,7 @@ class Detectors:
             self.detectors_dict[model_name].init()
         else:
             error = 'detector with name {} not found'.format(model_name)
-            log.logging.info(error)
+            logger.info(error)
             raise Exception(error)
 
     def init_all(self):
@@ -27,7 +29,7 @@ class Detectors:
             return self.detectors_dict[name].detect(fi, fo, args)
         else:
             error = 'detector with name {} not found'.format(name)
-            log.logging.info(error)
+            logger.info(error)
             raise Exception(error)
 
     def get(self):

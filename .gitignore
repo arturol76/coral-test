@@ -5,6 +5,7 @@
 # exclude everything
 secrets/*
 keys/*
+**/*.jpg
 
 # exception to the rule
 !*/.gitkeep

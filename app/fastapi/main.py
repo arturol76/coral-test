@@ -1,7 +1,10 @@
+#!/usr/bin/python3
 import argparse
 import uvicorn
 import os
-import modules.log as log
+
+import logging
+logger = logging.getLogger(__name__)
 
 def parse_cmdline_args():
     parser = argparse.ArgumentParser()
@@ -33,9 +36,9 @@ def start_uvicorn():
             ssl_keyfile_env = os.environ['SSL_KEYFILE']
             ssl_certfile_env = os.environ['SSL_CERTFILE']
         else:
-            log.logger.error("KEY/CERT files not not found. Check files existance and/or ENV vars")
+            logger.error("KEY/CERT files not not found. Check files existance and/or ENV vars")
     else:
-        log.logger.debug("KEY/CERT ENV vars not not found.")
+        logger.debug("KEY/CERT ENV vars not not found.")
     
     uvicorn.run(
         "api:app", 
