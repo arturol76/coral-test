@@ -35,14 +35,15 @@ class Detector:
         return self.name
 		
     # runs yolov3 object detection
-    def detect(self, fi, fo, args):
+    def detect(
+            self,
+            image_cv
+        ):
         
-        # Open image.
-        img = Image.open(fi)
-        logger.debug("Reading {}".format(fi))
-
+        pil_image = Image.fromarray(image_cv) # convert opencv frame (with type()==numpy) into PIL Image
+        
         # Run inference.
-        ans = self.engine.detect_with_image(img, threshold=0.05, keep_aspect_ratio=True,relative_coord=False, top_k=10)
+        ans = self.engine.detect_with_image(pil_image, threshold=0.05, keep_aspect_ratio=True,relative_coord=False, top_k=10)
         
         detections = []
 
@@ -62,13 +63,7 @@ class Detector:
                 }
                 logger.debug("{}".format(obj))
                 detections.append(obj)
-            
-            img.save(fo)
         else:
             logger.debug('No face detected!')
-
-        if args['delete']:
-            logger.debug("Deleting file {}".format(fi))
-            os.remove(fi)
 
         return detections

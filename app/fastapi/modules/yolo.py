@@ -7,7 +7,6 @@ import datetime
 
 from enum import Enum
 
-from cvlib.object_detection import draw_bbox
 
 import logging
 logger = logging.getLogger(__name__)
@@ -78,14 +77,15 @@ class Detector:
         output_layers = [layer_names[i[0] - 1] for i in self.net.getUnconnectedOutLayers()]
         return output_layers
 
-    def detect(self, fi, fo, args):
-        logger.debug("Reading {}".format(fi))
-        image = cv2.imread(fi)
+    def detect(
+            self, 
+            image_cv
+        ):
 
-        Height, Width = image.shape[:2]
+        Height, Width = image_cv.shape[:2]
         scale = 0.00392
         
-        blob = cv2.dnn.blobFromImage(image, scale, (416, 416), (0, 0, 0), True, crop=False)
+        blob = cv2.dnn.blobFromImage(image_cv, scale, (416, 416), (0, 0, 0), True, crop=False)
         self.net.setInput(blob)
         outs = self.net.forward(self.get_output_layers())
         
@@ -126,29 +126,10 @@ class Detector:
             h = box[3]
             bbox.append( [int(round(x)), int(round(y)), int(round(x + w)), int(round(y + h))])
             label.append(str(self.classes[class_ids[i]]))
-            conf.append(confidences[i])
-
-        if not args['delete']:
-            out = draw_bbox(image, bbox, label, conf)
-            logger.debug("Writing {}".format(fo))
-            cv2.imwrite(fo, out)
-
-        detections = []
+            conf.append(float(confidences[i]))
 
         for l, c, b in zip(label, conf, bbox):
-            logger.debug ('-----------------------------------------')
-            c = "{:.2f}%".format(c * 100)
-            obj = {
-                'type': l,
-                'confidence': c,
-                'box': b
-            }
-            logger.debug("{}".format(obj))
-            detections.append(obj)
+            logger.debug("type={}, confidence={:.2f}%, box={}".format(l,c,b))
 
-        if args['delete']:
-            logger.debug("Deleting file {}".format(fi))
-            os.remove(fi)
-
-        return detections                                   
+        return bbox, label, conf                                   
 

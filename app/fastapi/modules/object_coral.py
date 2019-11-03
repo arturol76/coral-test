@@ -1,5 +1,4 @@
 import cvlib as cv
-from cvlib.object_detection import draw_bbox
 import cv2
 import numpy as np
 import os
@@ -46,24 +45,23 @@ class Detector:
         return ret
 
     # runs yolov3 object detection
-    def detect(self, fi, fo, args):
+    def detect(
+            self, 
+            image_cv
+        ):
         
-        # Open image.
-        pil_image = Image.open(fi)
-        logger.debug("Reading {}".format(fi))
-
+        pil_image = Image.fromarray(image_cv) # convert opencv frame (with type()==numpy) into PIL Image
+        
         # Run inference.
         ans = self.engine.detect_with_image(pil_image, threshold=0.05, keep_aspect_ratio=True,relative_coord=False, top_k=10)
         
-        detections = []
-        post_bbox = []
-        post_label = []
-        post_conf = []
+        pre_bbox = []
+        pre_label = []
+        pre_conf = []
 
         # Display result.
         if ans:
             for obj in ans:
-                logger.debug ('-----------------------------------------')
                 if self.labels:
                     #sample output
                     #score =  0.97265625
@@ -72,76 +70,48 @@ class Detector:
                     box = [int(i) for i in box] #convert to int
                     
                     l = self.labels[obj.label_id]
-                    c = obj.score
+                    c = float(obj.score)
                     b = box
-                    
-                    obj = {
-                            'type': l,
-                            'confidence': "{:.2f}%".format(c * 100),
-                            'box': b
-                        }
-                    logger.debug("{}".format(obj))
 
-                    if c > conf_min:
-                        detections.append(obj)
-                        post_bbox.append(b)
-                        post_label.append(l)
-                        post_conf.append(c)
-                    else:
-                        logger.debug("DISCARDED as conf={} and threashold={}".format(c, conf_min))
+                    # x = int(box[0])
+                    # y = int(box[1])
+                    # w = int(box[2] - box[0])
+                    # h = int(box[3] - box[1])
+                    # b = [x,y,w,h]
+
+                    pre_bbox.append(b)
+                    pre_label.append(l)
+                    pre_conf.append(c)
+                    
+                    # if c > conf_min:
+                    #     post_bbox.append(b)
+                    #     post_label.append(l)
+                    #     post_conf.append(c)
+                    # else:
+                    #     logger.debug("DISCARDED as conf={} and threashold={}".format(c, conf_min))
 
             # Perform non maximum suppression to eliminate redundant overlapping boxes with
             # lower confidences.
 
-            nms_box = []
-            nms_conf = []
-            for i in post_bbox:
-                x = i[0]
-                y = i[1]
-                w = i[2] - i[0]
-                h = i[3] - i[1]
-                nms_box.append([x,y,w,h])
-
-            for j in post_conf:
-                nms_conf.append(float(j))
-
-            logger.debug("NMS bbox {}".format(nms_box))
-            logger.debug("NMS conf {}".format(nms_conf))
-
             #la prima soglia rappresenta la confidenza minima che accetti per un bbox
             #ti pare di aver capito che la seconda soglia rappresenta
             #l'area in % di sovrapposizione tra due bbox
-            indices = cv2.dnn.NMSBoxes(nms_box, nms_conf, 0.2, 0.3)
+            indices = cv2.dnn.NMSBoxes(pre_bbox, pre_conf, 0.2, 0.3)
             logger.debug("NMS indices {}".format(indices))
 
-            nms_bbox = []
-            nms_label = []
-            nms_conf = []
+            bbox = []
+            label = []
+            conf = []
 
             for i in indices:
                 j=i[0]
-                nms_bbox.append(post_bbox[j])
-                nms_label.append(post_label[j])
-                nms_conf.append(post_conf[j])
-
-            cv_image = np.array(pil_image)
-            out = draw_bbox(cv_image, nms_bbox, nms_label, nms_conf, write_conf=True)
-            #logger.debug("Writing {}".format(fo))
-            img2 = Image.fromarray(out, 'RGB')
-            img2.save(fo)
-
-            # if not args['delete']:
-            #     cv_image = np.array(pil_image)
-            #     out = draw_bbox(cv_image, post_bbox, post_label, post_conf, write_conf=True)
-            #     #logger.debug("Writing {}".format(fo))
-            #     img2 = Image.fromarray(out, 'RGB')
-            #     img2.save(fo)
-        
+                bbox.append(pre_bbox[j])
+                label.append(pre_label[j])
+                conf.append(pre_conf[j])
         else:
             logger.debug('No object detected!')
 
-        if args['delete']:
-            logger.debug("Deleting file {}".format(fi))
-            os.remove(fi)
+        for l, c, b in zip(label, conf, bbox):
+            logger.debug("type={}, confidence={:.2f}%, box={}".format(l,c,b))
 
-        return detections
+        return bbox, label, conf  

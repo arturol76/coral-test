@@ -33,6 +33,7 @@ class API_DetectRequest(BaseModel):
     url: str = None
     models_list: List[str] = None
     delete: bool = None
+    bbox_save: bool = None
 
 def upload_folder_init(folder: str):
     if not os.path.exists(folder):
@@ -67,69 +68,6 @@ api_detectors.add(YoloDetect.Detector(YoloDetect.YoloModel.yolov3_spp))
 api_detectors.add(YoloDetect.Detector(YoloDetect.YoloModel.yolov3_tiny))
 api_detectors.init_all()
 
-def detect_do(
-        fip: str,
-        ext: str,
-        models_list: List[str],
-        delete: bool
-    ):
-    
-    executed_succesfully = []
-    failed = []
-
-    start_total = datetime.datetime.now()
-    args = dict()
-    
-    args['delete'] = delete
-    args['gender'] ="male"
-
-    fi = fip + ext
-    
-    response_list = []
-    
-    for model_item in models_list: 
-        try:
-            start = datetime.datetime.now()
-            fo = fip + '-' + model_item + ext
-            detections = api_detectors.detect(model_item, fi, fo, args)
-            stop = datetime.datetime.now()
-            elapsed_time = stop - start
-            logger.info('detection took {}'.format(elapsed_time))
-
-            details = {
-                "fi": fi,
-                "fo": fo,
-                "detection_time": elapsed_time
-            }
-
-            response_item = {
-                "model": model_item,
-                "details": details,
-                "error": None,
-                "model_response": detections
-            }
-            response_list.append(response_item)
-
-            executed_succesfully.append(model_item)
-   
-        except Exception as error:
-            logger.error('exception: {}'.format(error))
-            response_item = {
-                "model": model_item,
-                "details": None,
-                "error": "invalid model: {}".format(model_item),
-                "model_response": None
-            }
-            response_list.append(response_item)
-            failed.append(model_item)
-            #raise HTTPException(status_code=404, detail='Invalid Model: {}'.format(model_item))
-
-    stop_total = datetime.datetime.now()
-    elapsed_time_total = stop_total - start_total
-    logger.info('TOTAL detection took {}'.format(elapsed_time_total))
-
-    return executed_succesfully, failed, elapsed_time_total, response_list
-
 @app.get("/")
 async def root():
     return {"message": "Hello World"}
@@ -148,11 +86,12 @@ async def api_detect_url(request: API_DetectRequest):
 
     fip, ext = utils.get_file_from_url(request.url, upload_folder)
 
-    executed_succesfully, failed, elapsed_time_total, response_list = detect_do(
+    executed_succesfully, failed, elapsed_time_total, response_list = api_detectors.run(
             fip, 
             ext, 
             request.models_list,
-            request.delete
+            request.delete,
+            request.bbox_save
         )
 
     response = {
@@ -170,24 +109,27 @@ async def api_detect_form(
         *, 
         file: UploadFile = File(...), 
         models_list: List[str] = Form(...), 
-        delete: bool = Form(...)
+        input_delete: bool = Form(...),
+        bbox_save: bool = Form(...)
     ):
     
     logger.info('filename={},content_type={}'.format(file.filename, file.content_type))
 
     fip, ext = utils.get_file_from_form(file, upload_folder)
 
-    executed_succesfully, failed, elapsed_time_total, response_list = detect_do(
+    executed_succesfully, failed, elapsed_time_total, response_list = api_detectors.run(
             fip, 
             ext, 
             models_list,
-            delete
+            input_delete,
+            bbox_save
         )
 
     request = {
         "filename": file.filename,
         "models_list": models_list,
-        "delete": delete
+        "delete": delete,
+        "bbox_save": bbox_save
     }
 
     response = {
@@ -206,24 +148,27 @@ async def api_detect_file(
         *,
         file: UploadFile = File(...), 
         model: List[str] = Query(...), 
-        delete: bool
+        input_delete: bool = False,
+        bbox_save: bool = False
     ):
     
     logger.info('filename={},content_type={}'.format(file.filename, file.content_type))
 
     fip, ext = utils.get_file_from_form(file, upload_folder)
 
-    executed_succesfully, failed, elapsed_time_total, response_list = detect_do(
+    executed_succesfully, failed, elapsed_time_total, response_list = api_detectors.run(
             fip, 
             ext, 
             model,
-            delete
+            input_delete,
+            bbox_save
         )
 
     request = {
         "filename": file.filename,
         "model": model,
-        "delete": delete
+        "input_delete": input_delete,
+        "bbox_save": bbox_save
     }
 
     response = {

@@ -1,5 +1,4 @@
 import cvlib as cv
-from cvlib.object_detection import draw_bbox
 import cv2
 import numpy as np
 import modules.globals as g
@@ -42,13 +41,14 @@ class Detector:
     def convert_label(self, label):
         return self.rekognition_labels[label]
 
-    def detect(self, fi, fo, args):
-        logger.debug("Reading {}".format(fi))
-        image = cv2.imread(fi)
-
+    def detect(
+            self,
+            image_cv
+        ):
+        
         logger.debug("[REKOGNITION] request via boto3...")
-        imgHeight, imgWidth = image.shape[:2]
-        pil_img = Image.fromarray(image) # convert opencv frame (with type()==numpy) into PIL Image
+        imgHeight, imgWidth = image_cv.shape[:2]
+        pil_img = Image.fromarray(image_cv) # convert opencv frame (with type()==numpy) into PIL Image
         stream = io.BytesIO()
         pil_img.save(stream, format='JPEG') # convert PIL Image to Bytes
         bin_img = stream.getvalue()
@@ -58,14 +58,13 @@ class Detector:
         #logger.debug("Reading {}".format(response))
         logger.debug("...response received")
 
-        detections = []
-        post_bbox = []
-        post_label = []
-        post_conf = []
+        bbox = []
+        label = []
+        conf = []
 
-        for label in response['Labels']:
-            for instance in label['Instances']:
-                if label['Name'] in self.rekognition_labels:
+        for reko_label in response['Labels']:
+            for instance in reko_label['Instances']:
+                if reko_label['Name'] in self.rekognition_labels:
                     
                     #extracting bounding box coordinates
                     left = int(imgWidth * instance['BoundingBox']['Left'])
@@ -78,30 +77,15 @@ class Detector:
                     x2 = left+width
                     y2 = top+height
 
-                    logger.debug ('-----------------------------------------')
-                    l = self.convert_label(label['Name'])
-                    c = "{:.2f}%".format(float(label['Confidence']))
+                    l = self.convert_label(reko_label['Name'])
+                    c = float(reko_label['Confidence']/100)
                     b = [x1, y1, x2, y2]
-                    logger.debug("box={}".format(b))
-                    obj = {
-                        'type': l,
-                        'confidence': c,
-                        'box': b
-                    }
-                    logger.debug("{}".format(obj))
-                    detections.append(obj)
+                    
+                    bbox.append(b)
+                    label.append(l)
+                    conf.append(c)
 
-                    post_bbox.append(b)
-                    post_label.append(l)
-                    post_conf.append(c)
+        for l, c, b in zip(label, conf, bbox):
+            logger.debug("type={}, confidence={:.2f}%, box={}".format(l,c,b))
 
-        if not args['delete']:
-            out = draw_bbox(image, post_bbox, post_label, post_conf)
-            logger.debug("Writing {}".format(fo))
-            cv2.imwrite(fo, out)
-
-        if args['delete']:
-            logger.debug("Deleting file {}".format(fi))
-            os.remove(fi)
-
-        return detections
+        return bbox, label, conf
