@@ -38,7 +38,7 @@ class Detectors:
             return self.detectors_dict[name].detect(image_cv)
         else:
             error = 'detector with name {} not found'.format(name)
-            logger.info(error)
+            logger.error(error)
             raise Exception(error)
 
     def get(self):

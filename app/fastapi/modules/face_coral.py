@@ -45,25 +45,29 @@ class Detector:
         # Run inference.
         ans = self.engine.detect_with_image(pil_image, threshold=0.05, keep_aspect_ratio=True,relative_coord=False, top_k=10)
         
-        detections = []
+        bbox = []
+        conf = []
+        label = []
 
         # Display result.
         if ans:
             for obj in ans:
-                logger.debug ('-----------------------------------------')
-                
                 #sample output
                 #score =  0.97265625
                 #box =  [417.078184068203, 436.7141185646848, 2443.3632068037987, 1612.3385782686541]
-                box = obj.bounding_box.flatten().tolist()
-                box = [int(i) for i in box] #convert to int
-                obj = {
-                    'confidence': "{:.2f}%".format(obj.score * 100),
-                    'box': box
-                }
-                logger.debug("{}".format(obj))
-                detections.append(obj)
+                b = obj.bounding_box.flatten().tolist()
+                b = [int(i) for i in b] #convert to int
+                c = float(obj.score)
+                l = 'person'
+                                
+                bbox.append(b)
+                conf.append(c)
+                label.append(l)
+
         else:
             logger.debug('No face detected!')
 
-        return detections
+        for l, c, b in zip(label, conf, bbox):
+            logger.debug("type={}, confidence={:.2f}%, box={}".format(l,c,b))
+
+        return bbox, label, conf

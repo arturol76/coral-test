@@ -83,7 +83,7 @@ def get_detectors():
 #http://192.168.2.96:8001/api/v1/detect
 @app.post("/api/v1/detect/url")
 async def api_detect_url(request: API_DetectRequest):
-
+    
     fip, ext = utils.get_file_from_url(request.url, upload_folder)
 
     executed_succesfully, failed, elapsed_time_total, response_list = api_detectors.run(
@@ -152,31 +152,34 @@ async def api_detect_file(
         bbox_save: bool = False
     ):
     
-    logger.info('filename={},content_type={}'.format(file.filename, file.content_type))
+    try:
+        fip, ext = utils.get_file_from_form(file, upload_folder)
 
-    fip, ext = utils.get_file_from_form(file, upload_folder)
+        executed_succesfully, failed, elapsed_time_total, response_list = api_detectors.run(
+                fip, 
+                ext, 
+                model,
+                input_delete,
+                bbox_save
+            )
 
-    executed_succesfully, failed, elapsed_time_total, response_list = api_detectors.run(
-            fip, 
-            ext, 
-            model,
-            input_delete,
-            bbox_save
-        )
+        request = {
+            "filename": file.filename,
+            "model": model,
+            "input_delete": input_delete,
+            "bbox_save": bbox_save
+        }
 
-    request = {
-        "filename": file.filename,
-        "model": model,
-        "input_delete": input_delete,
-        "bbox_save": bbox_save
-    }
-
-    response = {
-        "request":      request,
-        "executed_ok":  executed_succesfully,
-        "failed":       failed,       
-        "total_time":   elapsed_time_total,
-        "reponse_list": response_list
-    }
+        response = {
+            "request":      request,
+            "executed_ok":  executed_succesfully,
+            "failed":       failed,       
+            "total_time":   elapsed_time_total,
+            "reponse_list": response_list
+        }
+    
+    except Exception as error:
+        logger.error('exception: {}'.format(error))
+    
 
     return response
