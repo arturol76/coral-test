@@ -6,6 +6,7 @@ import os
 import cv2
 from PIL import Image
 from cvlib.object_detection import draw_bbox
+import modules.utils as utils
 
 import logging
 logger = logging.getLogger(__name__)
@@ -101,7 +102,8 @@ class Detectors:
 
                 if bbox_save == True:
                     tmp = image_cv.copy()
-                    out = draw_bbox(tmp, bbox, label, conf, write_conf=True)
+                    #out = draw_bbox(tmp, bbox, label, conf, write_conf=True)
+                    out = utils.draw_bbox2(tmp, bbox, label, conf, write_conf=True)
                     logger.debug("saving bbox image to {}".format(fo))
                     cv2.imwrite(fo, out)
     
