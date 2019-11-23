@@ -53,18 +53,16 @@ def get_file_from_url(url: str, upload_folder: str):
     else:
         ext = '.jpg'
     
-    logger.debug('saving: {}{}'.format(file_with_path_no_ext,ext))
-    open(file_with_path_no_ext+ext, 'wb').write(r.content)
+    file_with_path = file_with_path_no_ext+ext
+
+    logger.debug('saving: {}'.format(file_with_path))
+    open(file_with_path, 'wb').write(r.content)
     
-    logger.debug('get_file returned: {}{}'.format(file_with_path_no_ext,ext))
-    return file_with_path_no_ext, ext
+    return file_with_path
 
 
 #extracts file from form, saves it to a file and returns the filename
 def get_file_from_form(file: UploadFile, upload_folder: str):
-    filename_no_ext = os.path.splitext(file.filename)[0]
-    ext = os.path.splitext(file.filename)[1]
-    file_with_path_no_ext = os.path.join(upload_folder, filename_no_ext)
     file_with_path = os.path.join(upload_folder, file.filename)
     
     #writes file
@@ -73,8 +71,7 @@ def get_file_from_form(file: UploadFile, upload_folder: str):
     image_pil = Image.open(io.BytesIO(contents))
     image_pil.save(file_with_path)
     
-    logger.debug('get_file returned: {}{}'.format(file_with_path_no_ext,ext))
-    return file_with_path_no_ext, ext
+    return file_with_path
 
 def draw_bbox2(
         img, 

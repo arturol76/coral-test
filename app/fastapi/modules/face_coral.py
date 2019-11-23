@@ -2,12 +2,13 @@ import cvlib as cv
 from cvlib.object_detection import draw_bbox
 import cv2
 import numpy as np
-import modules.globals as g
 import os
 
 from edgetpu.detection.engine import DetectionEngine
 from PIL import Image
 from PIL import ImageDraw
+
+import modules.detectors as detectors_model
 
 import logging
 logger = logging.getLogger(__name__)
@@ -31,14 +32,14 @@ class Detector:
             
         return
 
-    def get_name(self):
+    def get_model_name(self):
         return self.name
 		
     # runs yolov3 object detection
     def detect(
             self,
             image_cv
-        ):
+        ) -> detectors_model.DetectorResponse:
         
         pil_image = Image.fromarray(image_cv) # convert opencv frame (with type()==numpy) into PIL Image
         
@@ -67,7 +68,8 @@ class Detector:
         else:
             logger.debug('No face detected!')
 
+        model_response = detectors_model.DetectorResponse(self.get_model_name())
         for l, c, b in zip(label, conf, bbox):
-            logger.debug("type={}, confidence={:.2f}%, box={}".format(l,c,b))
+            model_response.add(b,l,c)
 
-        return bbox, label, conf
+        return model_response

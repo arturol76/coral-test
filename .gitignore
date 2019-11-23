@@ -6,6 +6,10 @@
 secrets/*
 keys/*
 **/*.jpg
+.vscode/.ropeproject
+
+__pycache__/
+*.py[cod]
 
 # exception to the rule
 !*/.gitkeep

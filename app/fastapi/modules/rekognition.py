@@ -1,12 +1,13 @@
 import cvlib as cv
 import cv2
 import numpy as np
-import modules.globals as g
 import os
 
 import boto3
 import io
 from PIL import Image
+
+import modules.detectors as detectors_model
 
 import logging
 logger = logging.getLogger(__name__)
@@ -34,7 +35,7 @@ class Detector:
         }
         return
 
-    def get_name(self):
+    def get_model_name(self):
         return self.name
 		
 	#person|car|motorbike|bus|truck
@@ -44,7 +45,7 @@ class Detector:
     def detect(
             self,
             image_cv
-        ):
+        ) -> detectors_model.DetectorResponse:
         
         logger.debug("[REKOGNITION] request via boto3...")
         imgHeight, imgWidth = image_cv.shape[:2]
@@ -85,7 +86,8 @@ class Detector:
                     label.append(l)
                     conf.append(c)
 
+        model_response = detectors_model.DetectorResponse(self.get_model_name())
         for l, c, b in zip(label, conf, bbox):
-            logger.debug("type={}, confidence={:.2f}%, box={}".format(l,c,b))
+            model_response.add(b,l,c)
 
-        return bbox, label, conf
+        return model_response

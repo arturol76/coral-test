@@ -14,12 +14,14 @@ import modules.rekognition as RekognitionDetect
 import modules.yolo as YoloDetect
 import modules.detectors as Detectors
 
-import modules.globals as g
-import modules.db as Database
 import modules.utils as utils
 
 import datetime
 from enum import Enum
+
+import connectors.zoneminder as zmconnector
+
+import urllib.error
 
 import logging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s.%(msecs)03d - [%(filename)s:%(funcName)s] %(message)s', datefmt='%d-%b-%y %H:%M:%S')
@@ -29,11 +31,15 @@ logger.setLevel(logging.DEBUG) #set level for THIS logger
 #logger.basicConfig(level=logging.DEBUG, format='%(asctime)s.%(msecs)03d - [%(filename)s:%(funcName)s] %(message)s', datefmt='%d-%b-%y %H:%M:%S')
 logger.debug("api.py debug")
 
-class API_DetectRequest(BaseModel):
-    url: str = None
-    models_list: List[str] = None
-    delete: bool = None
-    bbox_save: bool = None
+class ApiRequest(BaseModel):
+    filename: str = ""
+    model: List[str] = [""]
+    image_save: bool = True
+    bbox_save: bool = False
+    
+class ApiResponse(BaseModel):
+    request:        ApiRequest = None
+    response:       Detectors.RunBatchResponse = None
 
 def upload_folder_init(folder: str):
     if not os.path.exists(folder):
@@ -41,32 +47,42 @@ def upload_folder_init(folder: str):
         logger.info('creating folder {}'.format(folder))
     else:
         logger.info('folder {} already exists'.format(folder))
-
     return folder
 
-upload_folder = upload_folder_init("./images")
+def init_api(folder):
+    #fast api
+    app = FastAPI(
+        title="mlserver",
+        description="my Machine Learning Server",
+        version="0.1.0",
+    )
 
-#fast api
-app = FastAPI(
-    title="mlserver",
-    description="my Machine Learning Server",
-    version="0.1.0",
-)
-
-#serving static files
-app.mount("/images", StaticFiles(directory=upload_folder), name="static")
+    #serving static files
+    app.mount("/images", StaticFiles(directory=folder), name="static")
+    return app
 
 #initialization of some models to save time (is it true?)
-api_detectors = Detectors.Detectors()
-api_detectors.add(ObjectDetect.Detector())
-api_detectors.add(FaceDetect.Detector())
-api_detectors.add(ObjectDetectCoral.Detector())
-api_detectors.add(FaceDetectCoral.Detector())
-api_detectors.add(RekognitionDetect.Detector())
-api_detectors.add(YoloDetect.Detector(YoloDetect.YoloModel.yolov3))
-api_detectors.add(YoloDetect.Detector(YoloDetect.YoloModel.yolov3_spp))
-api_detectors.add(YoloDetect.Detector(YoloDetect.YoloModel.yolov3_tiny))
-api_detectors.init_all()
+def load_detectors():
+    api_detectors = Detectors.Detectors()
+    api_detectors.add(ObjectDetect.Detector())
+    api_detectors.add(FaceDetect.Detector())
+    api_detectors.add(ObjectDetectCoral.Detector())
+    api_detectors.add(FaceDetectCoral.Detector())
+    api_detectors.add(RekognitionDetect.Detector())
+    api_detectors.add(YoloDetect.Detector(YoloDetect.YoloModel.yolov3))
+    api_detectors.add(YoloDetect.Detector(YoloDetect.YoloModel.yolov3_spp))
+    api_detectors.add(YoloDetect.Detector(YoloDetect.YoloModel.yolov3_tiny))
+    api_detectors.init_all()
+    return api_detectors
+
+
+api_detectors = load_detectors()
+upload_folder = upload_folder_init("./images")
+app = init_api(upload_folder)
+zm = zmconnector.ZmConnector(
+    "https://zoneminder.arturol76.net/zm",
+    upload_folder
+)
 
 @app.get("/")
 async def root():
@@ -80,106 +96,97 @@ def get_detectors():
 
     return response
 
-#http://192.168.2.96:8001/api/v1/detect
-@app.post("/api/v1/detect/url")
-async def api_detect_url(request: API_DetectRequest):
-    
-    fip, ext = utils.get_file_from_url(request.url, upload_folder)
-
-    executed_succesfully, failed, elapsed_time_total, response_list = api_detectors.run(
-            fip, 
-            ext, 
-            request.models_list,
-            request.delete,
-            request.bbox_save
-        )
-
-    response = {
-        "request":      request,
-        "executed_ok":  executed_succesfully,
-        "failed":       failed,       
-        "total_time":   elapsed_time_total,
-        "reponse_list": response_list
-    }
-    
-    return response
-
-@app.post("/api/v1/detect/form")
-async def api_detect_form(
-        *, 
-        file: UploadFile = File(...), 
-        models_list: List[str] = Form(...), 
-        input_delete: bool = Form(...),
-        bbox_save: bool = Form(...)
-    ):
-    
-    logger.info('filename={},content_type={}'.format(file.filename, file.content_type))
-
-    fip, ext = utils.get_file_from_form(file, upload_folder)
-
-    executed_succesfully, failed, elapsed_time_total, response_list = api_detectors.run(
-            fip, 
-            ext, 
-            models_list,
-            input_delete,
-            bbox_save
-        )
-
-    request = {
-        "filename": file.filename,
-        "models_list": models_list,
-        "delete": delete,
-        "bbox_save": bbox_save
-    }
-
-    response = {
-        "request":      request,
-        "executed_ok":  executed_succesfully,
-        "failed":       failed,       
-        "total_time":   elapsed_time_total,
-        "reponse_list": response_list
-    }
-
-    return response
-
 #refer to https://fastapi.tiangolo.com/tutorial/query-params-str-validations/#query-parameter-list-multiple-values
 @app.post("/api/v1/detect/file")
 async def api_detect_file(
         *,
         file: UploadFile = File(...), 
         model: List[str] = Query(...), 
-        input_delete: bool = False,
+        image_save: bool = True,
         bbox_save: bool = False
     ):
     
-    try:
-        fip, ext = utils.get_file_from_form(file, upload_folder)
+    request = ApiRequest()
+    request.bbox_save = bbox_save
+    request.image_save = image_save
 
-        executed_succesfully, failed, elapsed_time_total, response_list = api_detectors.run(
+    api_response = ApiResponse()
+    
+    try:
+        fip = utils.get_file_from_form(file, upload_folder)
+
+        batch_response = api_detectors.run(
                 fip, 
-                ext, 
                 model,
-                input_delete,
+                image_save,
                 bbox_save
             )
 
-        request = {
-            "filename": file.filename,
-            "model": model,
-            "input_delete": input_delete,
-            "bbox_save": bbox_save
-        }
+        request.filename = file.filename
+        request.model = model
 
-        response = {
-            "request":      request,
-            "executed_ok":  executed_succesfully,
-            "failed":       failed,       
-            "total_time":   elapsed_time_total,
-            "reponse_list": response_list
-        }
+        api_response.request = request
+        api_response.response = batch_response
+        
+        return api_response
     
     except Exception as error:
-        logger.error('exception: {}'.format(error))
-    
+        logger.error('exception: {}, {}'.format(type(error), error))
+        error_obj = {
+            "exception_type":   '{}'.format(type(error)),
+            "message":          '{}'.format(error)
+        }
+        raise HTTPException(status_code=404, detail=error_obj)
 
-    return response
+@app.post("/api/v1/detect/zm")
+async def api_detect_zm(
+        *,
+        model: List[str] = Query(...), 
+        image_save: bool = True,
+        bbox_save: bool = False,
+        eid: str,
+        fid: str
+    ):
+
+    request = ApiRequest()
+    request.bbox_save = bbox_save
+    request.image_save = image_save
+
+    api_response = ApiResponse()
+
+    try:
+        fip1, fip2 = zm.download_files(eid, fid)
+
+        batch_response = api_detectors.run(
+                fip1,            #filename with path of input image
+                model,
+                image_save,
+                bbox_save
+            )
+
+
+        #TEST
+        merged = api_detectors.merge(batch_response)
+        api_detectors.nms(merged, 0.5, 0.8)
+        
+        request.filename = fip1
+        request.model = model
+
+        api_response.request = request
+        api_response.response = batch_response
+        
+        return api_response
+    
+    except urllib.error.HTTPError as error:
+        logger.error('exception: {}'.format(error))
+        raise HTTPException(status_code=error.code, detail='{}'.format(error.reason))
+
+    except Exception as error:
+        logger.error('exception: {}, {}'.format(type(error), error))
+        error_obj = {
+            "exception_type":   '{}'.format(type(error)),
+            "message":          '{}'.format(error)
+        }
+        raise HTTPException(status_code=404, detail=error_obj)
+    
+    

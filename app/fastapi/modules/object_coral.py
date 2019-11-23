@@ -7,6 +7,8 @@ from edgetpu.detection.engine import DetectionEngine
 from PIL import Image
 from PIL import ImageDraw
 
+import modules.detectors as detectors_model
+
 import logging
 logger = logging.getLogger(__name__)
 
@@ -24,18 +26,18 @@ class Detector:
 
         try:
             self.engine = DetectionEngine(self.model_file)
-            self.labels = self.ReadLabelFile(self.label_file) if self.label_file else None
+            self.labels = self.read_label_file(self.label_file) if self.label_file else None
 
         except Exception as error:
             logger.error('Initializion error: {}'.format(error))
             
         return
         
-    def get_name(self):
+    def get_model_name(self):
         return self.name
 		
     # Function to read labels from text files.
-    def ReadLabelFile(self, file_path):
+    def read_label_file(self, file_path):
         with open(file_path, 'r', encoding="utf-8") as f:
             lines = f.readlines()
         ret = {}
@@ -48,7 +50,7 @@ class Detector:
     def detect(
             self, 
             image_cv
-        ):
+        ) -> detectors_model.DetectorResponse:
         
         pil_image = Image.fromarray(image_cv) # convert opencv frame (with type()==numpy) into PIL Image
         
@@ -111,7 +113,8 @@ class Detector:
         else:
             logger.debug('No object detected!')
 
+        model_response = detectors_model.DetectorResponse(self.get_model_name())
         for l, c, b in zip(label, conf, bbox):
-            logger.debug("type={}, confidence={:.2f}%, box={}".format(l,c,b))
+            model_response.add(b,l,c)
 
-        return bbox, label, conf  
+        return model_response  

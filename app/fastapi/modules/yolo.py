@@ -7,6 +7,8 @@ import datetime
 
 from enum import Enum
 
+import modules.detectors as detectors_model
+
 
 import logging
 logger = logging.getLogger(__name__)
@@ -66,7 +68,7 @@ class Detector:
         
         return
 
-    def get_name(self):
+    def get_model_name(self):
         return self.name
 	
     def get_classes(self):
@@ -80,7 +82,7 @@ class Detector:
     def detect(
             self, 
             image_cv
-        ):
+        ) -> detectors_model.DetectorResponse:
 
         Height, Width = image_cv.shape[:2]
         scale = 0.00392
@@ -116,7 +118,7 @@ class Detector:
         bbox = []
         label = []
         conf = []
-
+        
         for i in indices:
             i = i[0]
             box = boxes[i]
@@ -128,8 +130,9 @@ class Detector:
             label.append(str(self.classes[class_ids[i]]))
             conf.append(float(confidences[i]))
 
+        model_response = detectors_model.DetectorResponse(self.get_model_name())
         for l, c, b in zip(label, conf, bbox):
-            logger.debug("type={}, confidence={:.2f}%, box={}".format(l,c,b))
-
-        return bbox, label, conf                                   
+            model_response.add(b,l,c)
+            
+        return model_response                                  
 
