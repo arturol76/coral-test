@@ -14,7 +14,7 @@ from pydantic.dataclasses import dataclass
 logger = logging.getLogger(__name__)
 
 @dataclass
-class DetectorRecord:
+class DetectorTag:
     def __init__(
             self,
             bbox:       list,
@@ -37,17 +37,18 @@ class DetectorResponse:
             model_name: str
         ):
         self.model_name = model_name
-        self.data: List[DetectorRecord] = []
+        self.data: List[DetectorTag] = []
         logger.debug('{}: new instance'.format(type(self).__name__))
             
     def add(
             self,
             bbox:       list,
             label:      str,
-            conf:       float
+            conf:       float,
+            model_name: str
         ):
         logger.debug('{}: adding record'.format(type(self).__name__))
-        record = DetectorRecord(bbox,label,conf,self.model_name)
+        record = DetectorTag(bbox,label,conf,model_name)
         record.print()
         self.data.append(record)
 
@@ -190,6 +191,18 @@ class Detectors:
         batch_response.total_time = stop_total - start_total
         logger.info('TOTAL detection took {}'.format(batch_response.total_time))
 
+        #TEST
+        merged = self.merge(batch_response)
+        nms = self.nms(merged, 0.5, 0.8)
+        run_detector_response = RunModelResponse(
+            fip,
+            fop,
+            elapsed_time,
+            "",
+            detector_response
+        )
+        batch_response.response_list.append(nms)
+
         return batch_response
 
     def merge(
@@ -231,7 +244,7 @@ class Detectors:
 
         for i in indices:
             i = i[0]
-            nms_out.add(b[i], l[i], c[i])
+            nms_out.add(b[i], l[i], c[i], m[i])
 
         for record in nms_out.data:
             print("nms: {},{},{},{}".format(record.label,record.conf,record.model_name,record.bbox))

@@ -164,11 +164,6 @@ async def api_detect_zm(
                 bbox_save
             )
 
-
-        #TEST
-        merged = api_detectors.merge(batch_response)
-        api_detectors.nms(merged, 0.5, 0.8)
-        
         request.filename = fip1
         request.model = model
 

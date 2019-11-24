@@ -70,6 +70,6 @@ class Detector:
 
         model_response = detectors_model.DetectorResponse(self.get_model_name())
         for l, c, b in zip(label, conf, bbox):
-            model_response.add(b,l,c)
+            model_response.add(b,l,c,self.get_model_name())
 
         return model_response
