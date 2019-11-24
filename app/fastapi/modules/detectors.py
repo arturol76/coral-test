@@ -221,17 +221,17 @@ class Detectors:
         logger.info('TOTAL detection took {}'.format(batch_response.total_time))
 
         #TEST
-        merged = self.merge(batch_response)
-        nms = self.nms(merged, 0.5, 0.8)
+        merged, elapsed_time1 = self.merge(batch_response)
+        nms, elapsed_time2 = self.nms(merged, 0.5, 0.8)
         nms.draw_bbox_and_save(image_cv,bbox_save,fip,write_conf = True)
-        batch_response.add_ok(0, nms)
+        batch_response.add_ok(elapsed_time1+elapsed_time2, nms)
 
         return batch_response
 
     def merge(
             self,
             batch_response: RunBatchResponse
-        ) -> DetectorResponse:
+        ) -> (DetectorResponse, object):
     
         logger.debug('merging...')
 
@@ -249,14 +249,14 @@ class Detectors:
         total_time = stop_total - start_total
         logger.info('TOTAL detection took {}'.format(total_time))
 
-        return merged
+        return merged, total_time
 
     def nms(
             self,
             merged:         DetectorResponse,
             conf_threshold: float,
             nms_threshold:  float
-        ) -> DetectorResponse:
+        ) -> (DetectorResponse, object):
 
         start_total = datetime.datetime.now()
 
@@ -276,4 +276,4 @@ class Detectors:
         total_time = stop_total - start_total
         logger.info('TOTAL detection took {}'.format(total_time))
 
-        return nms_out
+        return nms_out, total_time
