@@ -14,7 +14,7 @@ from pydantic.dataclasses import dataclass
 logger = logging.getLogger(__name__)
 
 @dataclass
-class DetectorTag:
+class _DetectorTag:
     def __init__(
             self,
             bbox:       list,
@@ -37,7 +37,8 @@ class DetectorResponse:
             model_name: str
         ):
         self.model_name = model_name
-        self.data: List[DetectorTag] = []
+        self.file_bbox = None
+        self.data: List[_DetectorTag] = []
         logger.debug('{}: new instance'.format(type(self).__name__))
             
     def add(
@@ -48,7 +49,7 @@ class DetectorResponse:
             model_name: str
         ):
         logger.debug('{}: adding record'.format(type(self).__name__))
-        record = DetectorTag(bbox,label,conf,model_name)
+        record = _DetectorTag(bbox,label,conf,model_name)
         record.print()
         self.data.append(record)
 
@@ -69,29 +70,78 @@ class DetectorResponse:
 
         return b,l,c,m
 
+    def draw_bbox_and_save(
+            self,
+            image_cv:       object,
+            save_to_file:   bool,
+            file_in:        str,
+            color=None, 
+            write_conf:     bool =True
+        ) -> object:
+        
+        tmp = image_cv.copy()
+        b,l,c,m = self.get_blcm_vectors()
+        image_bbox = utils.draw_bbox2(tmp, b,l,c,color,write_conf)
+        
+        if save_to_file == True:
+            fop_no_ext, ext = os.path.splitext(file_in)
+            self.file_bbox = fop_no_ext + '-' + self.model_name + ext
+            logger.debug("saving bbox image to {}".format(self.file_bbox))
+            cv2.imwrite(self.file_bbox, image_bbox)
+        else:
+            self.file_bbox = None
+
+        return  image_bbox
+
 @dataclass
-class RunModelResponse:
+class RunDetectorResponse:
     def __init__(
             self,
             file_in: str,
-            file_out: str,
             detection_time: str,
             error: str,
             model_response: DetectorResponse
         ):
         self.file_in = file_in
-        self.file_out = file_out
         self.detection_time=detection_time
         self.error=error
         self.model_response=model_response
         logger.debug('{}: new instance'.format(type(self).__name__))
 
-class RunBatchResponse(BaseModel):
-    file_in:        str = ""
-    executed_ok:    List[str] = []
-    failed:         List[str] = []
-    total_time:     str = ""
-    response_list:  List[RunModelResponse] = []
+@dataclass
+class RunBatchResponse:
+    def __init__(
+            self,
+            file_in:        str
+        ):
+        self.file_in = file_in
+        self.executed_ok:    List[str] = []
+        self.failed:         List[str] = []
+        self.total_time:     str = ""
+        self.response_list:  List[RunDetectorResponse] = []
+        logger.debug('{}: new instance'.format(type(self).__name__))
+
+    def add_ok(
+            self,
+            detection_time: str,
+            detector_response: DetectorResponse
+        ):
+        logger.debug('{}: adding record'.format(type(self).__name__))
+        record = RunDetectorResponse(self.file_in,detection_time,"",detector_response)
+        self.response_list.append(record)
+        self.executed_ok.append(detector_response.model_name)
+
+    def add_failed(
+            self,
+            error:          str,
+            detection_time: str,
+            detector_response: DetectorResponse
+        ):
+        logger.debug('{}: adding record'.format(type(self).__name__))
+        record = RunDetectorResponse(self.file_in,detection_time,error,detector_response)
+        self.response_list.append(record)
+        self.executed_ok.append(detector_response.model_name)
+
 
 class Detectors:
     def __init__(self):
@@ -136,7 +186,7 @@ class Detectors:
             bbox_save: bool
         ) -> RunBatchResponse:
     
-        batch_response = RunBatchResponse()
+        batch_response = RunBatchResponse(fip)
         
         start_total = datetime.datetime.now()
 
@@ -145,43 +195,22 @@ class Detectors:
         image_cv = cv2.imread(fip)
         #image_pil = Image.fromarray(image_cv) # convert opencv frame (with type()==numpy) into PIL Image
                 
-        for model_to_be_executed in models_list: 
+        for model_name in models_list: 
             try:
                 start = datetime.datetime.now()
-
-                fop_no_ext, ext = os.path.splitext(fip)
-                fop = fop_no_ext + '-' + model_to_be_executed + ext
-                detector_response = self.detect(model_to_be_executed, image_cv)
+                detector_response = self.detect(model_name, image_cv)
+                detector_response.draw_bbox_and_save(image_cv,bbox_save,fip,write_conf = True)
                 stop = datetime.datetime.now()
                 elapsed_time = stop - start
                 logger.info('detection took {}'.format(elapsed_time))
-
-                run_detector_response = RunModelResponse(
-                    fip,
-                    fop,
-                    elapsed_time,
-                    "",
-                    detector_response
-                )
-
-                batch_response.executed_ok.append(model_to_be_executed)
-
-                if bbox_save == True:
-                    tmp = image_cv.copy()
-                    #out = draw_bbox(tmp, bbox, label, conf, write_conf=True)
-                    
-                    b,l,c,m = run_detector_response.model_response.get_blcm_vectors()
-                    out = utils.draw_bbox2(tmp, b, l, c, write_conf=True)
-                    logger.debug("saving bbox image to {}".format(fop))
-                    cv2.imwrite(fop, out)
     
             except Exception as error:
                 logger.error('exception: {}'.format(error))
-                detector_response.error = "invalid model: {}, error: {}".format(model_to_be_executed, error)
-                batch_response.failed.append(model_to_be_executed)
+                error = "invalid model: {}, error: {}".format(model_name, error)
+                batch_response.add_failed(error, elapsed_time, detector_response)
 
             finally:
-                batch_response.response_list.append(run_detector_response)
+                batch_response.add_ok(elapsed_time, detector_response)
         
         if image_save == False:
             logger.debug("Deleting input file {}".format(fip))
@@ -194,14 +223,8 @@ class Detectors:
         #TEST
         merged = self.merge(batch_response)
         nms = self.nms(merged, 0.5, 0.8)
-        run_detector_response = RunModelResponse(
-            fip,
-            fop,
-            elapsed_time,
-            "",
-            detector_response
-        )
-        batch_response.response_list.append(nms)
+        nms.draw_bbox_and_save(image_cv,bbox_save,fip,write_conf = True)
+        batch_response.add_ok(0, nms)
 
         return batch_response
 
