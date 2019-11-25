@@ -171,6 +171,7 @@ async def api_detect_zm(
         api_response.response = batch_response
         
         return api_response
+        #return api_response.response.output
     
     except urllib.error.HTTPError as error:
         logger.error('exception: {}'.format(error))

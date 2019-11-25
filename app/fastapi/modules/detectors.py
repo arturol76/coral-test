@@ -119,6 +119,7 @@ class RunBatchResponse:
         self.failed:         List[str] = []
         self.total_time:     str = ""
         self.response_list:  List[RunDetectorResponse] = []
+        self.output:         str
         logger.debug('{}: new instance'.format(type(self).__name__))
 
     def add_ok(
@@ -224,6 +225,7 @@ class Detectors:
         merged, elapsed_time1 = self.merge(batch_response)
         nms, elapsed_time2 = self.nms(merged, 0.5, 0.8)
         nms.draw_bbox_and_save(image_cv,bbox_save,fip,write_conf = True)
+        batch_response.output = self.zmes(nms)
         batch_response.add_ok(elapsed_time1+elapsed_time2, nms)
 
         return batch_response
@@ -277,3 +279,15 @@ class Detectors:
         logger.info('TOTAL detection took {}'.format(total_time))
 
         return nms_out, total_time
+
+    def zmes(
+            self,
+            detector_response:  DetectorResponse
+        ) -> str:
+
+        output_str = "[a] detected:"
+
+        for item in detector_response.data:
+            output_str += "{}:{:.2f}% ".format(item.label,item.conf*100)
+
+        return output_str
