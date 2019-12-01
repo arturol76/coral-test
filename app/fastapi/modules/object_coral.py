@@ -4,7 +4,7 @@ import os
 from edgetpu.detection.engine import DetectionEngine
 from PIL import Image
 
-from modules.detectors import DetectorResponse
+from modules.DetectorResponse import DetectorResponse
 from modules.DetectorBase import DetectorBase
 
 import logging

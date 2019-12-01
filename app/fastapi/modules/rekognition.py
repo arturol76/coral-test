@@ -3,7 +3,7 @@ import boto3
 import io
 from PIL import Image
 
-from modules.detectors import DetectorResponse
+from modules.DetectorResponse import DetectorResponse
 from modules.DetectorBase import DetectorBase
 
 import logging

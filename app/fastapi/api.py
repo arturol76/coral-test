@@ -63,7 +63,7 @@ def init_api(folder):
 
 #initialization of some models to save time (is it true?)
 def load_detectors():
-    api_detectors = Detectors.Detectors()
+    api_detectors = Detectors.DetectorsManager()
     api_detectors.add(ObjectDetect.Detector())
     api_detectors.add(FaceDetect.Detector())
     api_detectors.add(ObjectDetectCoral.Detector())

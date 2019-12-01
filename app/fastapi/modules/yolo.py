@@ -3,7 +3,7 @@ import cv2
 from enum import Enum
 import datetime
 
-from modules.detectors import DetectorResponse
+from modules.DetectorResponse import DetectorResponse
 from modules.DetectorBase import DetectorBase
 
 

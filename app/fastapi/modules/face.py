@@ -1,6 +1,6 @@
 import cvlib as cv
 
-from modules.detectors import DetectorResponse
+from modules.DetectorResponse import DetectorResponse
 from modules.DetectorBase import DetectorBase
 
 import logging
