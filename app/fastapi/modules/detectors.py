@@ -198,6 +198,9 @@ class Detectors:
                 
         for model_name in models_list: 
             try:
+                elapsed_time = 0
+                detector_response = None
+                
                 start = datetime.datetime.now()
                 detector_response = self.detect(model_name, image_cv)
                 detector_response.draw_bbox_and_save(image_cv,bbox_save,fip,write_conf = True)

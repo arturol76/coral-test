@@ -1,13 +1,10 @@
 import numpy as np
-import sys
 import cv2
-import os
-
+from enum import Enum
 import datetime
 
-from enum import Enum
-
-import modules.detectors as detectors_model
+from modules.detectors import DetectorResponse
+from modules.DetectorBase import DetectorBase
 
 
 import logging
@@ -34,9 +31,9 @@ yolov3_spp_config_file="./models/yolov3-spp.cfg"
 yolov3_spp_labels_file="./models/yolov3.txt"
 yolov3_spp_weights_file="./models/yolov3-spp.weights"
 
-class Detector:
+class Detector(DetectorBase):
     def __init__(self, model: YoloModel):
-        self.name = model
+        DetectorBase.__init__(self, model)
         self.model = model
 
     def init(self):
@@ -68,13 +65,10 @@ class Detector:
         
         return
 
-    def get_model_name(self):
-        return self.name
-	
     def get_classes(self):
         return self.classes
 
-    def get_output_layers(self):
+    def __get_output_layers(self):
         layer_names = self.net.getLayerNames()
         output_layers = [layer_names[i[0] - 1] for i in self.net.getUnconnectedOutLayers()]
         return output_layers
@@ -82,14 +76,14 @@ class Detector:
     def detect(
             self, 
             image_cv
-        ) -> detectors_model.DetectorResponse:
+        ) -> DetectorResponse:
 
         Height, Width = image_cv.shape[:2]
         scale = 0.00392
         
         blob = cv2.dnn.blobFromImage(image_cv, scale, (416, 416), (0, 0, 0), True, crop=False)
         self.net.setInput(blob)
-        outs = self.net.forward(self.get_output_layers())
+        outs = self.net.forward(self.__get_output_layers())
         
         class_ids = []
         confidences = []
@@ -130,7 +124,7 @@ class Detector:
             label.append(str(self.classes[class_ids[i]]))
             conf.append(float(confidences[i]))
 
-        model_response = detectors_model.DetectorResponse(self.get_model_name())
+        model_response = DetectorResponse(self.get_model_name())
         for l, c, b in zip(label, conf, bbox):
             model_response.add(b,l,c,self.get_model_name())
             

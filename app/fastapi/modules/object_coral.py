@@ -1,23 +1,20 @@
-import cvlib as cv
 import cv2
-import numpy as np
 import os
 
 from edgetpu.detection.engine import DetectionEngine
 from PIL import Image
-from PIL import ImageDraw
 
-import modules.detectors as detectors_model
+from modules.detectors import DetectorResponse
+from modules.DetectorBase import DetectorBase
 
 import logging
 logger = logging.getLogger(__name__)
 
 conf_min = 0.0
 
-class Detector:
+class Detector(DetectorBase):
     def __init__(self):
-        self.name = "object_coral"
-        logger.debug('Initialized detector: {}'.format(self.name))
+        DetectorBase.__init__(self, "object_coral")
         
     def init(self):
         # Initialize engine
@@ -26,18 +23,15 @@ class Detector:
 
         try:
             self.engine = DetectionEngine(self.model_file)
-            self.labels = self.read_label_file(self.label_file) if self.label_file else None
+            self.labels = self.__read_label_file(self.label_file) if self.label_file else None
 
         except Exception as error:
             logger.error('Initializion error: {}'.format(error))
             
         return
         
-    def get_model_name(self):
-        return self.name
-		
     # Function to read labels from text files.
-    def read_label_file(self, file_path):
+    def __read_label_file(self, file_path):
         with open(file_path, 'r', encoding="utf-8") as f:
             lines = f.readlines()
         ret = {}
@@ -50,7 +44,7 @@ class Detector:
     def detect(
             self, 
             image_cv
-        ) -> detectors_model.DetectorResponse:
+        ) -> DetectorResponse:
         
         pil_image = Image.fromarray(image_cv) # convert opencv frame (with type()==numpy) into PIL Image
         
@@ -113,7 +107,7 @@ class Detector:
         else:
             logger.debug('No object detected!')
 
-        model_response = detectors_model.DetectorResponse(self.get_model_name())
+        model_response = DetectorResponse(self.get_model_name())
         for l, c, b in zip(label, conf, bbox):
             model_response.add(b,l,c,self.get_model_name())
 

@@ -1,28 +1,22 @@
 import cvlib as cv
-import cv2
-import numpy as np
-import os
 
-import modules.detectors as detectors_model
+from modules.detectors import DetectorResponse
+from modules.DetectorBase import DetectorBase
 
 import logging
 logger = logging.getLogger(__name__)
 
-class Detector:
+class Detector(DetectorBase):
     def __init__(self):
-        self.name = "face"
-        logger.debug('Initialized detector: {}'.format(self.name))
+        DetectorBase.__init__(self, "face")
 
     def init(self):
         return
         
-    def get_model_name(self):
-        return self.name
-
     def detect(
             self,
             image_cv
-        ) -> detectors_model.DetectorResponse:
+        ) -> DetectorResponse:
 
         #TO BE MODIFIED ----------------------
         gender = False
@@ -73,7 +67,7 @@ class Detector:
         #         #obj['gender'] = gender_label
         #         #obj['gender_confidence'] = gender_confidence
 
-        model_response = detectors_model.DetectorResponse(self.get_model_name())
+        model_response = DetectorResponse(self.get_model_name())
         for l, c, b in zip(label, conf, bbox):
             model_response.add(b,l,c,self.get_model_name())
 

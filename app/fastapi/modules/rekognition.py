@@ -1,21 +1,17 @@
-import cvlib as cv
-import cv2
-import numpy as np
 import os
-
 import boto3
 import io
 from PIL import Image
 
-import modules.detectors as detectors_model
+from modules.detectors import DetectorResponse
+from modules.DetectorBase import DetectorBase
 
 import logging
 logger = logging.getLogger(__name__)
 
-class Detector:
+class Detector(DetectorBase):
     def __init__(self):
-        self.name = "rekognition"
-        logger.debug('Initialized detector: {}'.format(self.name))
+        DetectorBase.__init__(self, "rekognition")
 
     def init(self):
         self.aws_region = os.environ['AWS_REGION']
@@ -35,17 +31,14 @@ class Detector:
         }
         return
 
-    def get_model_name(self):
-        return self.name
-		
 	#person|car|motorbike|bus|truck
-    def convert_label(self, label):
+    def __convert_label(self, label):
         return self.rekognition_labels[label]
 
     def detect(
             self,
             image_cv
-        ) -> detectors_model.DetectorResponse:
+        ) -> DetectorResponse:
         
         logger.debug("[REKOGNITION] request via boto3...")
         imgHeight, imgWidth = image_cv.shape[:2]
@@ -78,7 +71,7 @@ class Detector:
                     x2 = left+width
                     y2 = top+height
 
-                    l = self.convert_label(reko_label['Name'])
+                    l = self.__convert_label(reko_label['Name'])
                     c = float(reko_label['Confidence']/100)
                     b = [x1, y1, x2, y2]
                     
@@ -86,7 +79,7 @@ class Detector:
                     label.append(l)
                     conf.append(c)
 
-        model_response = detectors_model.DetectorResponse(self.get_model_name())
+        model_response = DetectorResponse(self.get_model_name())
         for l, c, b in zip(label, conf, bbox):
             model_response.add(b,l,c,self.get_model_name())
 
