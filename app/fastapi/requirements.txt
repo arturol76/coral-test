@@ -4,7 +4,7 @@ email-validator
 
 #v1.0.0 brings beaking change causing error:
 #TypeError: cannot create 'cython_function_or_method' instances
-pydantic<1.0.0
+pydantic<2.0.0
 
 boto3
 aiofiles
