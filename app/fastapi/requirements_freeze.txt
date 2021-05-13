@@ -50,7 +50,7 @@ progressbar==2.5
 protobuf==3.10.0
 pycparser==2.19
 pycrypto==2.6.1
-pydantic==0.32.2
+pydantic==1.6.2
 pygobject==3.26.1
 PyJWT==1.7.1
 python-apt==1.6.4
