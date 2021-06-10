@@ -17,7 +17,7 @@ dnspython==1.16.0
 docutils==0.15.2
 edgetpu==2.12.1
 email-validator==1.0.5
-fastapi==0.42.0
+fastapi==0.65.2
 Flask==1.1.1
 Flask-JWT-Extended==3.24.1
 Flask-RESTful==0.3.7
