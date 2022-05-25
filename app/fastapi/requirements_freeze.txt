@@ -52,7 +52,7 @@ pycparser==2.19
 pycrypto==2.6.1
 pydantic==0.32.2
 pygobject==3.26.1
-PyJWT==1.7.1
+PyJWT==2.4.0
 python-apt==1.6.4
 python-dateutil==2.8.0
 pytz==2019.3
