@@ -47,7 +47,7 @@ opt-einsum==3.1.0
 passlib==1.7.1
 Pillow==5.1.0
 progressbar==2.5
-protobuf==3.10.0
+protobuf==3.18.3
 pycparser==2.19
 pycrypto==2.6.1
 pydantic==0.32.2
